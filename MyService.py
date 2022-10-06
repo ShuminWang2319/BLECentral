@@ -10,7 +10,9 @@ from PySide6.QtBluetooth import (QLowEnergyController,
                                 QLowEnergyCharacteristic)
 
 
-from ui_service import Ui_ServiceDiscovery
+#from ui_service import Ui_ServiceDiscovery
+from ui_Myservice import Ui_ServiceDiscovery
+
 
 class ServiceDiscoveryDialog(QDialog):
     def __init__(self, deviceInfo, parent=None):
@@ -35,6 +37,14 @@ class ServiceDiscoveryDialog(QDialog):
         self.serviceDic = {}
 
         self.ServiceSel = 0
+
+        self._ui.send.setEnabled(False)
+
+        self._ui.send.clicked.connect(self.UARTsend)
+
+        self.UartRX = 0
+
+        #self.UARTservice = ServiceData()
 
         
 
@@ -78,9 +88,9 @@ class ServiceDiscoveryDialog(QDialog):
 
     def StateChanged(self, newState):
 
-        print(newState)
+        #print(newState)
         if newState == QLowEnergyService.ServiceState.RemoteServiceDiscovered:
-            print(self.ServiceSel)
+            #print(self.ServiceSel)
             uuid = self.ServiceSel
             service = self.serviceDic[uuid]
 
@@ -92,31 +102,32 @@ class ServiceDiscoveryDialog(QDialog):
                 for c in characteristics:
                     #print(c.name())
                     #print(c.value())
-                    print(c.uuid())
-                    print(c.properties())
+                    # print(c.uuid())
+                    # print(c.properties())
                     # c.clientCharacteristicConfiguration()
 
 
                     #{6e400003-b5a3-f393-e0a9-e50e24dcca9e} UART TX
                     if c.uuid().toString() == '{6e400003-b5a3-f393-e0a9-e50e24dcca9e}':
                         UartTX = c
-                        print('UartTX')
+                        print('Characteristic: UartTX')
                     #{6e400002-b5a3-f393-e0a9-e50e24dcca9e} UART RX
                     if c.uuid().toString() == '{6e400002-b5a3-f393-e0a9-e50e24dcca9e}':
-                        UartRX = c
-                        print('UartRX')
+                        self.UartRX = c
+                        print('Characteristic: UartRX')
+                
                 
                 #enable notify
                 CCCD = UartTX.clientCharacteristicConfiguration()
                 data = QByteArray(b'\x01\x00')
                 service.writeDescriptor(CCCD,data)
-
-                service.characteristicChanged.connect(self.readUartTX)
-
-                inbyte = QByteArray(b'\x01\x00')
-                service.writeCharacteristic(UartRX,inbyte)
-
                 
+                self._ui.send.setEnabled(True)
+                # service.characteristicChanged.connect(self.readUartTX)
+
+                # inbyte = QByteArray(b'\x01\x00')
+                # service.writeCharacteristic(UartRX,inbyte)
+                #self._ui.lineEdit.editingFinished.connect(lambda UartRX: self.UARTsend(UartRX))
                 
 
             elif uuid == '{0000180a-0000-1000-8000-00805f9b34fb}':
@@ -136,7 +147,24 @@ class ServiceDiscoveryDialog(QDialog):
         
     
     def readUartTX(self,c,value):
-        print('readUartTX')
-        print(c.uuid())
+        
+        #print(c.uuid())
+        print('RX:')
         print(value)
+    
+    def UARTsend(self, UartRX):
+        #print('send pushed')
+        #inbyte = QByteArray(b'\x01\x00')
+        
+        instr = 'G/test/led'
+        inbyte = instr.encode()
+        inbyte = QByteArray(inbyte)
+        print("TX:")
+        print(instr)
+
+        service = self.serviceDic[self.ServiceSel]
+
+        service.characteristicChanged.connect(self.readUartTX)
+        
+        service.writeCharacteristic(self.UartRX,inbyte)
 
