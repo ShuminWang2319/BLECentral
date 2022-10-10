@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>550</width>
-    <height>486</height>
+    <width>632</width>
+    <height>291</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,7 +15,14 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QListWidget" name="list"/>
+    <widget class="QListView" name="servicelistView"/>
+   </item>
+   <item>
+    <widget class="QPushButton" name="connect">
+     <property name="text">
+      <string>Connect</string>
+     </property>
+    </widget>
    </item>
    <item>
     <widget class="QLineEdit" name="lineEdit"/>

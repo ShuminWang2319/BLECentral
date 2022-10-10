@@ -1,16 +1,24 @@
-from PySide6.QtCore import Qt, Slot,QByteArray
-from PySide6.QtWidgets import QDialog,QListWidgetItem
+from PySide6.QtCore import Qt, Slot,QByteArray, QAbstractListModel
+from PySide6.QtWidgets import QDialog
 
 from PySide6.QtBluetooth import (QLowEnergyController, 
-                                QBluetoothServiceDiscoveryAgent,
-                                QBluetoothServiceInfo,
-                                QBluetoothUuid,
-                                QLowEnergyService,
-                                QLowEnergyCharacteristic)
+                                QBluetoothUuid, 
+                                QLowEnergyService)
 
-
-#from ui_service import Ui_ServiceDiscovery
 from ui_Myservice import Ui_ServiceDiscovery
+
+class ServiceModel(QAbstractListModel):
+    def __init__(self, service = None):
+        super().__init__()
+        self.service = service or []
+    
+    def data(self, index, role):
+        if role == Qt.ItemDataRole.DisplayRole:
+            status, uuid, name, service = self.service[index.row()]
+            return f"{uuid} {name}"
+    
+    def rowCount(self, index):
+        return len(self.service)
 
 
 class ServiceDiscoveryDialog(QDialog):
@@ -20,6 +28,10 @@ class ServiceDiscoveryDialog(QDialog):
         self._ui.setupUi(self)
 
         self.setWindowTitle(deviceInfo.name())
+
+        self.model = ServiceModel()
+        self._ui.servicelistView.setModel(self.model)
+        self._ui.connect.pressed.connect(self.connectService)
         
         self._controller = QLowEnergyController()
         self.central = self._controller.createCentral(deviceInfo)
@@ -27,29 +39,12 @@ class ServiceDiscoveryDialog(QDialog):
         self.central.connectToDevice()
         self.central.connected.connect(self.connected)
 
-        
-        # self._serviceDiscovery = QBluetoothServiceDiscoveryAgent(deviceInfo.address())
-        # self._serviceDiscovery.serviceDiscovered.connect(self.add_service)
-
-        #self._ui.list.itemActivated.connect(self.item_activated)
-
-        self._ui.list.itemEntered.connect(self.item_activated)
-        self._ui.list.itemDoubleClicked.connect(self.item_activated)
-        
-
-        self.serviceDic = {}
-
-        self.ServiceSel = 0
-
         self._ui.send.setEnabled(False)
 
         self._ui.send.clicked.connect(self.UARTsend)
 
         self.UartRX = 0
-
-        #self.UARTservice = ServiceData()
-
-        
+      
 
     def connected(self):
         print("connected to device")
@@ -57,7 +52,6 @@ class ServiceDiscoveryDialog(QDialog):
         print("Discovering services")
         self.central.discoverServices()
         self.central.serviceDiscovered.connect(self.ServiceDiscovered)
-        #self.central.discoveryFinished.connect(self.DiscoveryFinished)
 
     
     @Slot(QBluetoothUuid)
@@ -65,37 +59,38 @@ class ServiceDiscoveryDialog(QDialog):
         
         service = self.central.createServiceObject(uuid)
         suuidstr = service.serviceUuid().toString()
-        sname = service.serviceName()
-        
-        slabel = f"{suuidstr} {sname}"
-        self._ui.list.addItem(slabel)
-        print("serviceDiscovered:"+slabel)
-        self.serviceDic[suuidstr] = service
-        
-    @Slot(QListWidgetItem)
-    def item_activated(self, item):
-        print(item.text()[0:38])
-        #{00001800-0000-1000-8000-00805f9b34fb} Generic Access
-        #{00001801-0000-1000-8000-00805f9b34fb} Generic Attribute
-        #{00001530-1212-efde-1523-785feabcd123} Legacy DFU service
-        #{0000180a-0000-1000-8000-00805f9b34fb} Device Information
-        #{6e400001-b5a3-f393-e0a9-e50e24dcca9e} nordic uart service
-        
-        uuid = item.text()[0:38]
-        self.ServiceSel = uuid
-        service = self.serviceDic[uuid]
-        
-        mode = QLowEnergyService.DiscoveryMode.FullDiscovery
-        service.discoverDetails(mode)
-        service.stateChanged.connect(self.StateChanged)
+        sname = service.serviceName()       
+
+        self.model.service.append((False, suuidstr, sname, service))
+        self.model.layoutChanged.emit()
+
+        print("serviceDiscovered:"+ f"{suuidstr} {sname}")
+
+    def connectService(self):
+        indexes = self._ui.servicelistView.selectedIndexes()
+        #print(indexes)
+        if indexes:
+            index = indexes[0]
+            item = self.model.service[index.row()]
+            uuid = item[1]
+            service = item[3]
+            # print("item: ")
+            # print(item)
+            # print(item[1])
+            
+            mode = QLowEnergyService.DiscoveryMode.FullDiscovery
+            service.discoverDetails(mode)
+            service.stateChanged.connect(self.StateChanged)
 
     def StateChanged(self, newState):
-
         #print(newState)
         if newState == QLowEnergyService.ServiceState.RemoteServiceDiscovered:
-            #print(self.ServiceSel)
-            uuid = self.ServiceSel
-            service = self.serviceDic[uuid]
+
+            indexes = self._ui.servicelistView.selectedIndexes()
+            index = indexes[0]
+            item = self.model.service[index.row()]
+            uuid = item[1]
+            service = item[3]
 
             if uuid == '{6e400001-b5a3-f393-e0a9-e50e24dcca9e}':
                 print("nordic UART service")
@@ -103,12 +98,6 @@ class ServiceDiscoveryDialog(QDialog):
                 characteristics = service.characteristics()
                 #print(characteristics)
                 for c in characteristics:
-                    #print(c.name())
-                    #print(c.value())
-                    # print(c.uuid())
-                    # print(c.properties())
-                    # c.clientCharacteristicConfiguration()
-
 
                     #{6e400003-b5a3-f393-e0a9-e50e24dcca9e} UART TX
                     if c.uuid().toString() == '{6e400003-b5a3-f393-e0a9-e50e24dcca9e}':
@@ -129,11 +118,6 @@ class ServiceDiscoveryDialog(QDialog):
                 # service.characteristicChanged.connect(self.readUartTX)
                 self._ui.lineEdit.returnPressed.connect(self.UARTsend)
 
-                # inbyte = QByteArray(b'\x01\x00')
-                # service.writeCharacteristic(UartRX,inbyte)
-                #self._ui.lineEdit.editingFinished.connect(lambda UartRX: self.UARTsend(UartRX))
-                
-
             elif uuid == '{0000180a-0000-1000-8000-00805f9b34fb}':
                 print("Device Information service")
                          
@@ -142,10 +126,6 @@ class ServiceDiscoveryDialog(QDialog):
                     print(c.name())
                     print(c.value())
                     print(c.properties())
-                    # print(c.uuid())
-                    # if c.name() == 'Firmware Revision String':
-                    #     print(c.value())
-                    #     c.characteristicRead.connect(self.CharacteristicRead)
 
         # else:
         
@@ -158,7 +138,6 @@ class ServiceDiscoveryDialog(QDialog):
     
     def UARTsend(self):
         #print('send pushed')
-        #inbyte = QByteArray(b'\x01\x00')
         
         #instr = 'G/test/led'
         instr = self._ui.lineEdit.text()
@@ -167,7 +146,10 @@ class ServiceDiscoveryDialog(QDialog):
         print("TX:")
         print(instr)
 
-        service = self.serviceDic[self.ServiceSel]
+        indexes = self._ui.servicelistView.selectedIndexes()
+        index = indexes[0]
+        item = self.model.service[index.row()]
+        service = item[3]
 
         service.characteristicChanged.connect(self.readUartTX)
         

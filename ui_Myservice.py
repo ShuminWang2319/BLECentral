@@ -16,20 +16,25 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QAbstractButton, QApplication, QDialog, QDialogButtonBox,
-    QLabel, QLineEdit, QListWidget, QListWidgetItem,
-    QPushButton, QSizePolicy, QVBoxLayout, QWidget)
+    QLabel, QLineEdit, QListView, QPushButton,
+    QSizePolicy, QVBoxLayout, QWidget)
 
 class Ui_ServiceDiscovery(object):
     def setupUi(self, ServiceDiscovery):
         if not ServiceDiscovery.objectName():
             ServiceDiscovery.setObjectName(u"ServiceDiscovery")
-        ServiceDiscovery.resize(550, 486)
+        ServiceDiscovery.resize(632, 291)
         self.verticalLayout = QVBoxLayout(ServiceDiscovery)
         self.verticalLayout.setObjectName(u"verticalLayout")
-        self.list = QListWidget(ServiceDiscovery)
-        self.list.setObjectName(u"list")
+        self.servicelistView = QListView(ServiceDiscovery)
+        self.servicelistView.setObjectName(u"servicelistView")
 
-        self.verticalLayout.addWidget(self.list)
+        self.verticalLayout.addWidget(self.servicelistView)
+
+        self.connect = QPushButton(ServiceDiscovery)
+        self.connect.setObjectName(u"connect")
+
+        self.verticalLayout.addWidget(self.connect)
 
         self.lineEdit = QLineEdit(ServiceDiscovery)
         self.lineEdit.setObjectName(u"lineEdit")
@@ -69,6 +74,7 @@ class Ui_ServiceDiscovery(object):
 
     def retranslateUi(self, ServiceDiscovery):
         ServiceDiscovery.setWindowTitle(QCoreApplication.translate("ServiceDiscovery", u"Available Services", None))
+        self.connect.setText(QCoreApplication.translate("ServiceDiscovery", u"Connect", None))
         self.send.setText(QCoreApplication.translate("ServiceDiscovery", u"Send", None))
         self.status.setText(QCoreApplication.translate("ServiceDiscovery", u"Querying...", None))
     # retranslateUi
