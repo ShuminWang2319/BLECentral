@@ -1,4 +1,3 @@
-from turtle import delay
 from PySide6.QtCore import Qt, Slot,QByteArray
 from PySide6.QtWidgets import QDialog,QListWidgetItem
 
@@ -32,7 +31,11 @@ class ServiceDiscoveryDialog(QDialog):
         # self._serviceDiscovery = QBluetoothServiceDiscoveryAgent(deviceInfo.address())
         # self._serviceDiscovery.serviceDiscovered.connect(self.add_service)
 
-        self._ui.list.itemActivated.connect(self.item_activated)
+        #self._ui.list.itemActivated.connect(self.item_activated)
+
+        self._ui.list.itemEntered.connect(self.item_activated)
+        self._ui.list.itemDoubleClicked.connect(self.item_activated)
+        
 
         self.serviceDic = {}
 
@@ -124,6 +127,7 @@ class ServiceDiscoveryDialog(QDialog):
                 
                 self._ui.send.setEnabled(True)
                 # service.characteristicChanged.connect(self.readUartTX)
+                self._ui.lineEdit.returnPressed.connect(self.UARTsend)
 
                 # inbyte = QByteArray(b'\x01\x00')
                 # service.writeCharacteristic(UartRX,inbyte)
@@ -152,11 +156,12 @@ class ServiceDiscoveryDialog(QDialog):
         print('RX:')
         print(value)
     
-    def UARTsend(self, UartRX):
+    def UARTsend(self):
         #print('send pushed')
         #inbyte = QByteArray(b'\x01\x00')
         
-        instr = 'G/test/led'
+        #instr = 'G/test/led'
+        instr = self._ui.lineEdit.text()
         inbyte = instr.encode()
         inbyte = QByteArray(inbyte)
         print("TX:")
