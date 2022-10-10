@@ -16,8 +16,8 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QCheckBox, QDialog, QGroupBox,
-    QHBoxLayout, QListWidget, QListWidgetItem, QPushButton,
-    QSizePolicy, QVBoxLayout, QWidget)
+    QHBoxLayout, QListView, QPushButton, QSizePolicy,
+    QVBoxLayout, QWidget)
 
 class Ui_DeviceDiscovery(object):
     def setupUi(self, DeviceDiscovery):
@@ -26,10 +26,10 @@ class Ui_DeviceDiscovery(object):
         DeviceDiscovery.resize(400, 411)
         self.verticalLayout = QVBoxLayout(DeviceDiscovery)
         self.verticalLayout.setObjectName(u"verticalLayout")
-        self.list = QListWidget(DeviceDiscovery)
-        self.list.setObjectName(u"list")
+        self.deviceListView = QListView(DeviceDiscovery)
+        self.deviceListView.setObjectName(u"deviceListView")
 
-        self.verticalLayout.addWidget(self.list)
+        self.verticalLayout.addWidget(self.deviceListView)
 
         self.groupBox = QGroupBox(DeviceDiscovery)
         self.groupBox.setObjectName(u"groupBox")
@@ -73,7 +73,6 @@ class Ui_DeviceDiscovery(object):
 
         self.retranslateUi(DeviceDiscovery)
         self.quit.clicked.connect(DeviceDiscovery.accept)
-        self.clear.clicked.connect(self.list.clear)
 
         QMetaObject.connectSlotsByName(DeviceDiscovery)
     # setupUi

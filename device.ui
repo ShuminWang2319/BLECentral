@@ -15,7 +15,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QListWidget" name="list"/>
+    <widget class="QListView" name="deviceListView"/>
    </item>
    <item>
     <widget class="QGroupBox" name="groupBox">
@@ -88,22 +88,6 @@
     <hint type="destinationlabel">
      <x>396</x>
      <y>268</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>clear</sender>
-   <signal>clicked()</signal>
-   <receiver>list</receiver>
-   <slot>clear()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>188</x>
-     <y>276</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>209</x>
-     <y>172</y>
     </hint>
    </hints>
   </connection>
