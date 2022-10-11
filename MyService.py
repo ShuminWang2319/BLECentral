@@ -7,6 +7,14 @@ from PySide6.QtBluetooth import (QLowEnergyController,
 
 from ui_Myservice import Ui_ServiceDiscovery
 
+"""UUIDs for services & characteristic"""
+
+ServiceUUID_NordicUART = '{6e400001-b5a3-f393-e0a9-e50e24dcca9e}'  
+CharUUID_UARTtx = '{6e400003-b5a3-f393-e0a9-e50e24dcca9e}'
+CharUUID_UARTrx = '{6e400002-b5a3-f393-e0a9-e50e24dcca9e}'
+
+ServiceUUID_DevInfo = '{0000180a-0000-1000-8000-00805f9b34fb}'
+
 class ServiceModel(QAbstractListModel):
     def __init__(self, service = None):
         super().__init__()
@@ -92,7 +100,7 @@ class ServiceDiscoveryDialog(QDialog):
             uuid = item[1]
             service = item[3]
 
-            if uuid == '{6e400001-b5a3-f393-e0a9-e50e24dcca9e}':
+            if uuid == ServiceUUID_NordicUART:
                 print("nordic UART service")
                 
                 characteristics = service.characteristics()
@@ -100,11 +108,11 @@ class ServiceDiscoveryDialog(QDialog):
                 for c in characteristics:
 
                     #{6e400003-b5a3-f393-e0a9-e50e24dcca9e} UART TX
-                    if c.uuid().toString() == '{6e400003-b5a3-f393-e0a9-e50e24dcca9e}':
+                    if c.uuid().toString() == CharUUID_UARTtx:
                         UartTX = c
                         print('Characteristic: UartTX')
                     #{6e400002-b5a3-f393-e0a9-e50e24dcca9e} UART RX
-                    if c.uuid().toString() == '{6e400002-b5a3-f393-e0a9-e50e24dcca9e}':
+                    if c.uuid().toString() == CharUUID_UARTrx:
                         self.UartRX = c
                         print('Characteristic: UartRX')
                 
@@ -118,7 +126,7 @@ class ServiceDiscoveryDialog(QDialog):
                 # service.characteristicChanged.connect(self.readUartTX)
                 self._ui.lineEdit.returnPressed.connect(self.UARTsend)
 
-            elif uuid == '{0000180a-0000-1000-8000-00805f9b34fb}':
+            elif uuid == ServiceUUID_DevInfo:
                 print("Device Information service")
                          
                 characteristics = service.characteristics()
