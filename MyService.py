@@ -1,4 +1,4 @@
-from PySide6.QtCore import Qt, Slot,QByteArray, QAbstractListModel
+from PySide6.QtCore import Qt, Slot, QByteArray, QAbstractListModel
 from PySide6.QtWidgets import QDialog
 
 from PySide6.QtBluetooth import (QLowEnergyController, 
@@ -6,6 +6,7 @@ from PySide6.QtBluetooth import (QLowEnergyController,
                                 QLowEnergyService)
 
 from ui_Myservice import Ui_ServiceDiscovery
+import parser
 
 """UUIDs for services & characteristic"""
 
@@ -48,11 +49,15 @@ class ServiceDiscoveryDialog(QDialog):
         self.central.connected.connect(self.connected)
 
         self._ui.send.setEnabled(False)
-
-        self._ui.send.clicked.connect(self.UARTsend)
+        self._ui.SendSeq.setEnabled(False)
 
         self.UartRX = 0
-      
+
+        self.APIParser = parser.APIParser()
+
+        self.APIidx = 0
+        self.APIcnt = 0
+        self.CurrSer = 0
 
     def connected(self):
         print("connected to device")
@@ -102,6 +107,7 @@ class ServiceDiscoveryDialog(QDialog):
 
             if uuid == ServiceUUID_NordicUART:
                 print("nordic UART service")
+                self._ui.textEdit.append('Nordic UART service:')
                 
                 characteristics = service.characteristics()
                 #print(characteristics)
@@ -123,26 +129,35 @@ class ServiceDiscoveryDialog(QDialog):
                 service.writeDescriptor(CCCD,data)
                 
                 self._ui.send.setEnabled(True)
-                # service.characteristicChanged.connect(self.readUartTX)
+                self._ui.SendSeq.setEnabled(True)
+                self._ui.send.clicked.connect(self.UARTsend)
+                self._ui.SendSeq.clicked.connect(self.UARTSendSeq)
                 self._ui.lineEdit.returnPressed.connect(self.UARTsend)
 
             elif uuid == ServiceUUID_DevInfo:
                 print("Device Information service")
-                         
+                self._ui.textEdit.append('Device Information service:')
+
                 characteristics = service.characteristics()
                 for c in characteristics:
                     print(c.name())
                     print(c.value())
                     print(c.properties())
 
+                    self._ui.textEdit.append('Name: ' + str(c.name()))
+                    self._ui.textEdit.append('      value: ' + str(c.value()))
+
         # else:
         
-    
+    """
+    Send text API from line edit
+    """
     def readUartTX(self,c,value):
         
         #print(c.uuid())
         print('RX:')
         print(value)
+        self._ui.textEdit.append('Central RX: ' + str(value))
     
     def UARTsend(self):
         #print('send pushed')
@@ -159,7 +174,72 @@ class ServiceDiscoveryDialog(QDialog):
         item = self.model.service[index.row()]
         service = item[3]
 
+        try:
+            service.characteristicChanged.disconnect(self.readUartTXSeq)
+        except RuntimeError:
+            pass
+
+        try:
+            service.characteristicChanged.disconnect(self.readUartTX)
+        except RuntimeError:
+            pass
+
         service.characteristicChanged.connect(self.readUartTX)
         
         service.writeCharacteristic(self.UartRX,inbyte)
+        self._ui.textEdit.append('Central TX: ' + str(instr))
 
+    """
+    Send API from api.csv.
+    Support both string and byte array format.
+    """
+    def UARTSendSeq(self):
+        indexes = self._ui.servicelistView.selectedIndexes()
+        index = indexes[0]
+        item = self.model.service[index.row()]
+        service = item[3]
+
+        self.CurrSer = service
+        
+        try:
+            service.characteristicChanged.disconnect(self.readUartTX)
+        except RuntimeError:
+            pass
+
+        try:
+            service.characteristicChanged.disconnect(self.readUartTXSeq)
+        except RuntimeError:
+            pass
+
+        service.characteristicChanged.connect(self.readUartTXSeq)
+ 
+        self.APIcnt = self.APIParser.getAPInum()
+        self.APIidx = 1
+        self.UARTsendAPI(self.APIidx)
+
+    def readUartTXSeq(self,c,value):
+        print('RX:')
+        print(value)
+        self._ui.textEdit.append('Central RX: ' + str(value))
+        self.APIidx += 1
+
+        if(self.APIidx <= self.APIcnt):
+            self.UARTsendAPI(self.APIidx)
+    
+    def UARTsendAPI(self, idx):
+        apistr,tp,name = self.APIParser.getAPI(idx)
+        if tp == 'str':
+            inbyte = apistr.encode()
+            inbyte = QByteArray(inbyte)
+        if tp == 'ba':
+            strlist = apistr.split(' ')
+            print(strlist)
+            bytelist = list(map(int, strlist))
+            inbyte = QByteArray(bytearray(bytelist))
+        
+        self.CurrSer.writeCharacteristic(self.UartRX,inbyte)
+        print('TX: ')
+        print(apistr)
+        print(name)
+        self._ui.textEdit.append('Central TX: ' + str(apistr))
+    
