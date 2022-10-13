@@ -38,11 +38,11 @@ class DeviceDiscoveryDialog(QDialog):
         self._ui.deviceListView.setModel(self.model)
 
         self._local_device = QBluetoothLocalDevice()
-        self._discovery_agent = 0 
+        self.discoveryAgent = 0 
 
-        self._ui.scan.clicked.connect(self.startScan)
-        self._ui.deviceListView.activated.connect(self.item_activated)
-        self._ui.connectDevice.clicked.connect(self.item_activated)
+        self._ui.scan.clicked.connect(self.startScanning)
+        self._ui.deviceListView.activated.connect(self.itemActivated)
+        self._ui.connectDevice.clicked.connect(self.itemActivated)
 
         self._ui.clear.clicked.connect(self.clearList)
 
@@ -61,19 +61,19 @@ class DeviceDiscoveryDialog(QDialog):
         else:
             print("power on unchecked")
 
-    def startScan(self):
-        self._discovery_agent = QBluetoothDeviceDiscoveryAgent()
-        self._discovery_agent.deviceDiscovered.connect(self.DeviceDiscoverd)
-        self._discovery_agent.finished.connect(self.ScanFinished)
-        self._discovery_agent.canceled.connect(self.scanCanceled)
+    def startScanning(self):
+        self.discoveryAgent = QBluetoothDeviceDiscoveryAgent()
+        self.discoveryAgent.deviceDiscovered.connect(self.deviceDiscoverd)
+        self.discoveryAgent.finished.connect(self.scanFinished)
+        self.discoveryAgent.canceled.connect(self.scanCanceled)
 
-        self._discovery_agent.start()
+        self.discoveryAgent.start()
         self._ui.scan.setEnabled(False)
         self._ui.clear.setEnabled(False)
-        self._ui.stopScanPB.clicked.connect(self._discovery_agent.stop)
+        self._ui.stopScanPB.clicked.connect(self.discoveryAgent.stop)
     
     def scanCanceled(self):
-        print("scanCanceled")
+        #print("scanCanceled")
         self._ui.scan.setEnabled(True)
         self._ui.clear.setEnabled(True)
 
@@ -82,21 +82,21 @@ class DeviceDiscoveryDialog(QDialog):
         self.model.layoutChanged.emit()
     
     @Slot(QBluetoothDeviceInfo)
-    def DeviceDiscoverd(self, info):
-        adrstr = info.address().toString()
-        dev = (False, info.name(), adrstr, info)
+    def deviceDiscoverd(self, info):
+        adrStr = info.address().toString()
+        dev = (False, info.name(), adrStr, info)
 
         if dev not in self.model.device:
             
             self.model.device.append(dev)
             self.model.layoutChanged.emit()
     
-    def ScanFinished(self):
+    def scanFinished(self):
         self._ui.scan.setEnabled(True)
         self._ui.clear.setEnabled(True)
 
     @Slot(QListWidgetItem)
-    def item_activated(self, item):
+    def itemActivated(self, item):
         indexes = self._ui.deviceListView.selectedIndexes()
         if indexes:
             item = self.model.device[indexes[0].row()]

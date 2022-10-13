@@ -16,7 +16,7 @@ CharUUID_UARTrx = '{6e400002-b5a3-f393-e0a9-e50e24dcca9e}'
 
 ServiceUUID_DevInfo = '{0000180a-0000-1000-8000-00805f9b34fb}'
 
-class ServiceModel(QAbstractListModel):
+class serviceModel(QAbstractListModel):
     def __init__(self, service = None):
         super().__init__()
         self.service = service or []
@@ -38,7 +38,7 @@ class ServiceDiscoveryDialog(QDialog):
 
         self.setWindowTitle(deviceInfo.name())
 
-        self.model = ServiceModel()
+        self.model = serviceModel()
         self._ui.servicelistView.setModel(self.model)
         self._ui.connect.pressed.connect(self.connectService)
         
@@ -53,22 +53,22 @@ class ServiceDiscoveryDialog(QDialog):
 
         self.UartRX = 0
 
-        self.APIParser = parser.APIParser()
+        self.apiParser = parser.APIParser()
 
-        self.APIidx = 0
-        self.APIcnt = 0
-        self.CurrSer = 0
+        self.apiIdx = 0
+        self.apiCnt = 0
+        self.currSer = 0
 
     def connected(self):
         print("connected to device")
         
         print("Discovering services")
         self.central.discoverServices()
-        self.central.serviceDiscovered.connect(self.ServiceDiscovered)
+        self.central.serviceDiscovered.connect(self.serviceDiscovered)
 
     
     @Slot(QBluetoothUuid)
-    def ServiceDiscovered(self,uuid):
+    def serviceDiscovered(self,uuid):
         
         service = self.central.createServiceObject(uuid)
         suuidstr = service.serviceUuid().toString()
@@ -77,7 +77,7 @@ class ServiceDiscoveryDialog(QDialog):
         self.model.service.append((False, suuidstr, sname, service))
         self.model.layoutChanged.emit()
 
-        print("serviceDiscovered:"+ f"{suuidstr} {sname}")
+        print("Service discovered:"+ f"{suuidstr} {sname}")
 
     def connectService(self):
         indexes = self._ui.servicelistView.selectedIndexes()
@@ -93,9 +93,9 @@ class ServiceDiscoveryDialog(QDialog):
             
             mode = QLowEnergyService.DiscoveryMode.FullDiscovery
             service.discoverDetails(mode)
-            service.stateChanged.connect(self.StateChanged)
+            service.stateChanged.connect(self.stateChanged)
 
-    def StateChanged(self, newState):
+    def stateChanged(self, newState):
         #print(newState)
         if newState == QLowEnergyService.ServiceState.RemoteServiceDiscovered:
 
@@ -199,7 +199,7 @@ class ServiceDiscoveryDialog(QDialog):
         item = self.model.service[index.row()]
         service = item[3]
 
-        self.CurrSer = service
+        self.currSer = service
         
         try:
             service.characteristicChanged.disconnect(self.readUartTX)
@@ -213,21 +213,21 @@ class ServiceDiscoveryDialog(QDialog):
 
         service.characteristicChanged.connect(self.readUartTXSeq)
  
-        self.APIcnt = self.APIParser.getAPInum()
-        self.APIidx = 1
-        self.UARTsendAPI(self.APIidx)
+        self.apiCnt = self.apiParser.getAPInum()
+        self.apiIdx = 1
+        self.UARTsendAPI(self.apiIdx)
 
     def readUartTXSeq(self,c,value):
         print('RX:')
         print(value)
         self._ui.textEdit.append('Central RX: ' + str(value))
-        self.APIidx += 1
+        self.apiIdx += 1
 
-        if(self.APIidx <= self.APIcnt):
-            self.UARTsendAPI(self.APIidx)
+        if(self.apiIdx <= self.apiCnt):
+            self.UARTsendAPI(self.apiIdx)
     
     def UARTsendAPI(self, idx):
-        apistr,tp,name = self.APIParser.getAPI(idx)
+        apistr,tp,name = self.apiParser.getAPI(idx)
         if tp == 'str':
             inbyte = apistr.encode()
             inbyte = QByteArray(inbyte)
@@ -237,7 +237,7 @@ class ServiceDiscoveryDialog(QDialog):
             bytelist = list(map(int, strlist))
             inbyte = QByteArray(bytearray(bytelist))
         
-        self.CurrSer.writeCharacteristic(self.UartRX,inbyte)
+        self.currSer.writeCharacteristic(self.UartRX,inbyte)
         print('TX: ')
         print(apistr)
         print(name)
