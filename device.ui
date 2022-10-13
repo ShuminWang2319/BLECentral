@@ -6,14 +6,17 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>411</height>
+    <width>569</width>
+    <height>528</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Bluetooth Scanner</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="sizeConstraint">
+    <enum>QLayout::SetDefaultConstraint</enum>
+   </property>
    <item>
     <widget class="QListView" name="deviceListView"/>
    </item>
@@ -56,20 +59,38 @@
       </widget>
      </item>
      <item>
+      <widget class="QPushButton" name="stopScanPB">
+       <property name="text">
+        <string>Stop scanning</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="clear">
        <property name="text">
         <string>Clear</string>
        </property>
       </widget>
      </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
      <item>
-      <widget class="QPushButton" name="quit">
+      <widget class="QPushButton" name="connectDevice">
        <property name="text">
-        <string>Quit</string>
+        <string>Connect device</string>
        </property>
       </widget>
      </item>
     </layout>
+   </item>
+   <item>
+    <widget class="QPushButton" name="quit">
+     <property name="text">
+      <string>Quit</string>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>

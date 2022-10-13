@@ -28,23 +28,58 @@ class DeviceDiscoveryDialog(QDialog):
         self._ui = Ui_DeviceDiscovery()
         self._ui.setupUi(self)
         
+        self._ui.scan.setEnabled(False)
+        
+        self._ui.power.setCheckState(Qt.Unchecked)
+        self._ui.discoverable.setCheckState(Qt.Unchecked) #unused currently
+        self._ui.power.stateChanged.connect(self.checkLocalDevice)
+
         self.model = DeviceModel()
         self._ui.deviceListView.setModel(self.model)
 
         self._local_device = QBluetoothLocalDevice()
-        self._controller = QLowEnergyController()
-        self._discovery_agent = QBluetoothDeviceDiscoveryAgent()
-        self._deviceInfo = QBluetoothDeviceInfo()
-
-        self._discovery_agent.deviceDiscovered.connect(self.DeviceDiscoverd)
-        self._discovery_agent.finished.connect(self.ScanFinished)
+        self._discovery_agent = 0 
 
         self._ui.scan.clicked.connect(self.startScan)
         self._ui.deviceListView.activated.connect(self.item_activated)
-    
+        self._ui.connectDevice.clicked.connect(self.item_activated)
+
+        self._ui.clear.clicked.connect(self.clearList)
+
+
+    def checkLocalDevice(self):
+        if self._ui.power.checkState() == Qt.Checked:
+            if self._local_device.isValid() == True:
+                self._local_device.powerOn()
+                name = self._local_device.name()
+                print(name)
+                
+                # if self._ui.discoverable.checkState() == Qt.Checked:
+                self._local_device.setHostMode(self._local_device.HostDiscoverable)
+                
+                self._ui.scan.setEnabled(True)
+        else:
+            print("power on unchecked")
+
     def startScan(self):
+        self._discovery_agent = QBluetoothDeviceDiscoveryAgent()
+        self._discovery_agent.deviceDiscovered.connect(self.DeviceDiscoverd)
+        self._discovery_agent.finished.connect(self.ScanFinished)
+        self._discovery_agent.canceled.connect(self.scanCanceled)
+
         self._discovery_agent.start()
         self._ui.scan.setEnabled(False)
+        self._ui.clear.setEnabled(False)
+        self._ui.stopScanPB.clicked.connect(self._discovery_agent.stop)
+    
+    def scanCanceled(self):
+        print("scanCanceled")
+        self._ui.scan.setEnabled(True)
+        self._ui.clear.setEnabled(True)
+
+    def clearList(self):
+        self.model.device = []
+        self.model.layoutChanged.emit()
     
     @Slot(QBluetoothDeviceInfo)
     def DeviceDiscoverd(self, info):
@@ -58,6 +93,7 @@ class DeviceDiscoveryDialog(QDialog):
     
     def ScanFinished(self):
         self._ui.scan.setEnabled(True)
+        self._ui.clear.setEnabled(True)
 
     @Slot(QListWidgetItem)
     def item_activated(self, item):
